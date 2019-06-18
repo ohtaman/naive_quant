@@ -77,25 +77,25 @@ def build_evaluation_graph(model_file, ckpt):
         return graph_def, model.inputs, model.outputs
 
 
-def convert_to_tflite(graph_def, inputs, outputs, min_max=None, default_ranges_stats=(-6, 6)):
-    if min_max is None:
-        min_max = [(-1, 1) for _ in inputs]
+def convert_to_tflite(graph_def, inputs, outputs, input_ranges=None, default_ranges_stats=(-6, 6)):
+    if input_ranges is None:
+        input_ranges = [(-1, 1) for _ in inputs]
     
     converter = tf.lite.TFLiteConverter(graph_def, inputs, outputs)
     converter.inference_type = tf.lite.constants.QUANTIZED_UINT8
     input_arrays = converter.get_input_arrays()
     converter.quantized_input_stats = {
         i_: (int(-min_*255), 255./(max_ - min_))
-        for i_, (min_, max_) in zip(input_arrays, min_max)
+        for i_, (min_, max_) in zip(input_arrays, input_ranges)
     }
     converter.default_ranges_stats = default_ranges_stats
     return converter.convert()
 
 
-def convert(model_file, representative_dataset, min_max=None, default_ranges_stats=(-6, 6)):
+def convert(model_file, representative_dataset, input_ranges=None, default_ranges_stats=(-6, 6)):
     with tempfile.TemporaryDirectory() as ckpt:
         quantize_in_training_phase(model_file, ckpt, representative_dataset)
         graph_def, inputs, outputs = build_evaluation_graph(model_file, ckpt)
-        tflite_model = convert_to_tflite(graph_def, inputs, outputs, min_max, default_ranges_stats)
+        tflite_model = convert_to_tflite(graph_def, inputs, outputs, input_ranges, default_ranges_stats)
 
     return tflite_model

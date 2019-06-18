@@ -21,11 +21,11 @@ import naivequant as nq
 
 ...
 
-tflite_file = nq.convert(
+tflite_file = n.convert(
     keras_model_file,
+    representative_dataset, 
     input_ranges,
-    representative_dataset,
-    default_range_stats
+    default_ranges_stats
 )
 
 with open('model.tflite', 'wb') as o_:
